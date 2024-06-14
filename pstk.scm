@@ -798,20 +798,22 @@
                 "Argument to TTK-MAP-WIDGETS must be "
                 "ALL, NONE or a list of widget types.")))))
 
-(define (string-split c s)
-  (define (split i k tmp res)
-    (cond ((= i k)
-           (if (null? tmp) res (cons tmp res)))
-          ((char=? (string-ref s i) c)
-           (split (+ i 1) k "" (cons tmp res)))
-          (else (split (+ i 1) k
-                       (string-append tmp
-                                      (string (string-ref s i)))
-                       res))))
-  (reverse (split 0 (string-length s) "" '())))
+;;; XXX: Commented out because string-split is already part of Guile.
+;; (define (string-split c s)
+;;   (define (split i k tmp res)
+;;     (cond ((= i k)
+;;            (if (null? tmp) res (cons tmp res)))
+;;           ((char=? (string-ref s i) c)
+;;            (split (+ i 1) k "" (cons tmp res)))
+;;           (else (split (+ i 1) k
+;;                        (string-append tmp
+;;                                       (string (string-ref s i)))
+;;                        res))))
+;;   (reverse (split 0 (string-length s) "" '())))
 
 (define (ttk-available-themes)
-    (string-split #\space (eval-wish "ttk::style theme names")))
+  (string-split (eval-wish "ttk::style theme names")
+                g#\space))
 
 (define (do-wait-for-window w)
   (dispatch-event)
