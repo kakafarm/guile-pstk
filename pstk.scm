@@ -877,6 +877,8 @@
 
 ;;; End weird letrec definitions.
 
+;;; Start weird letrec body:
+
 (set! tk-eval eval-wish)
 (set! tk-id->widget id->widget)
 (set! tk-var var)
@@ -930,3 +932,5 @@
 (set! ttk/set-theme (make-wish-func "ttk::style theme use"))
 (set! ttk/style (make-wish-func "ttk::style"))
 (set! ttk-map-widgets map-ttk-widgets)
+
+;;; End weird letrec body.
