@@ -683,16 +683,14 @@
     (set! wish-output (car result))))
 
 (define (read-line in)
-  (letrec
-      ((collect-chars
-        (lambda (c s)
-          (cond ((or (eof-object? c) (char=? c #\newline))
-                 (apply string (reverse s)))
-                (else (collect-chars (read-char in) (cons c s))))))
-       (first-char
-        (read-char in)))
-    (cond ((eof-object? first-char) first-char)
-          (else (collect-chars first-char '())))))
+  (define (collect-chars c s)
+     (lambda (c s)
+       (cond ((or (eof-object? c) (char=? c #\newline))
+              (apply string (reverse s)))
+             (else (collect-chars (read-char in) (cons c s))))))
+  (define first-char (read-char in))
+  (cond ((eof-object? first-char) first-char)
+        (else (collect-chars first-char '()))))
 
 (define (eval-wish cmd)
   (wish (string-append
