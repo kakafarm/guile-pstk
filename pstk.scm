@@ -234,16 +234,15 @@
 	  enabled
 	  (set! enabled (car args))))))
 
-(define ->string
-  (lambda (x)
-    (cond ((string? x) x)
-	  ((symbol? x) (symbol->string x))
-	  ((char?   x) (string x))
-	  ((number? x) (number->string x))
-	  (else 
-	   (let ((out (open-output-string)))
-	     (display x out)
-	     (get-output-string out))))))
+(define (->string x)
+  (cond ((string? x) x)
+	((symbol? x) (symbol->string x))
+	((char?   x) (string x))
+	((number? x) (number->string x))
+	(else
+	 (let ((out (open-output-string)))
+	   (display x out)
+	   (get-output-string out)))))
 
 ;;; Start weird letrec definitions:
 
@@ -385,27 +384,24 @@
 
 (define flush-output-port force-output)
 
-(define flush-wish
-  (lambda ()
-    (flush-output-port wish-input)))
+(define (flush-wish)
+  (flush-output-port wish-input))
 
-(define option?
-  (lambda (x)
-    (or (and *use-keywords?*
-             (keyword? x))
-        (and (symbol? x)
-             (let* ((s (symbol->string x))
-                    (n (string-length s)))
-               (char=? #\: (string-ref s (- n 1))))))))
+(define (option? x)
+  (or (and *use-keywords?*
+           (keyword? x))
+      (and (symbol? x)
+           (let* ((s (symbol->string x))
+                  (n (string-length s)))
+             (char=? #\: (string-ref s (- n 1)))))))
 
-(define make-option-string
-  (lambda (x)
-    (if (and *use-keywords?*
-             (keyword? x))
-        (string-append " -" (keyword->string x))
-        (let ((s (symbol->string x)))
-          (string-append " -"
-                         (substring s 0 (- (string-length s) 1)))))))
+(define (make-option-string x)
+  (if (and *use-keywords?*
+           (keyword? x))
+      (string-append " -" (keyword->string x))
+      (let ((s (symbol->string x)))
+        (string-append " -"
+                       (substring s 0 (- (string-length s) 1))))))
 
 (define (improper-list->string a first)
   (cond ((pair? a)
@@ -431,19 +427,18 @@
         (else "#<other>")))
 
 (define (string-translate s map)
-  (letrec
-      ((s-prepend (lambda (s1 s2)
-                    (cond ((null? s1) s2)
-                          (else (s-prepend (cdr s1) (cons (car s1) s2))))))
-       (s-xlate (lambda (s r)
-                  (cond ((null? s) (reverse r))
-                        (else (let ((n (assv (car s) map)))
-                                (cond (n (s-xlate (cdr s)
-                                                  (s-prepend (string->list (cdr n)) r)))
-                                      (else (s-xlate (cdr s)
-                                                     (cons (car s) r))))))))))
-    (list->string
-     (s-xlate (string->list s) '()))))
+  (define (s-prepend s1 s2)
+    (cond ((null? s1) s2)
+          (else (s-prepend (cdr s1) (cons (car s1) s2)))))
+  (define (s-xlate s r)
+    (cond ((null? s) (reverse r))
+          (else (let ((n (assv (car s) map)))
+                  (cond (n (s-xlate (cdr s)
+                                    (s-prepend (string->list (cdr n)) r)))
+                        (else (s-xlate (cdr s)
+                                       (cons (car s) r))))))))
+  (list->string
+   (s-xlate (string->list s) '())))
 
 (define (string-trim-left str)
   (cond ((string=? str "") "")
@@ -574,306 +569,280 @@
                 (cons result tk-ids+widgets)))
     result))
 
-(define scheme-arg->tk-arg
-  (lambda (x)
-    (cond ((eq? x #f) " 0")
-          ((eq? x #t) " 1")
-          ((eq? x '()) " {}")
-          ((option? x) (make-option-string x))
-          ((widget? x) (string-append " " (x 'get-id)))
-          ((and (pair? x) (procedure? (car x)))
-           (let* ((lambda-term (car x))
-                  (rest (cdr x))
-                  (l (memq lambda-term
-                           inverse-commands-invoked-by-tk))
-                  (keystr (if l (form->string (cadr l))
-                              (symbol->string (gen-symbol)))))
-             (if (not l)
-                 (let ((key (string->symbol keystr)))
-                   (set! inverse-commands-invoked-by-tk
-                         (cons lambda-term
-                               (cons key
-                                     inverse-commands-invoked-by-tk)))
-                   (set! commands-invoked-by-tk
-                         (cons key
-                               (cons lambda-term
-                                     commands-invoked-by-tk)))))
-             (string-append " {callToScm "
-                            keystr
-                            (scheme-arglist->tk-argstring rest)
-                            "}")))
-          ((procedure? x)
-           (scheme-arglist->tk-argstring `((,x))))
-          ((list? x)
-           (cond ((eq? (car x) '+)
-                  (let ((result (string-trim-left
-                                 (scheme-arglist->tk-argstring
-                                  (cdr x)))))
-                    (cond ((string=? result "") " +")
-                          ((string=? "{" (substring result 0 1))
-                           (string-append
-                            " {+ "
-                            (substring result 1
-                                       (string-length result))))
-                          (else (string-append " +" result)))))
-                 ((and (= (length x) 3)
-                       (equal? (car x) (string->symbol "@"))
-                       (number? (cadr x))
-                       (number? (caddr x)))
-                  (string-append
-                   "@"
-                   (number->string (cadr x))
-                   ","
-                   (number->string (caddr x))))
-                 (else
-                  (string-append
-                   " {"
-                   (string-trim-left
-                    (scheme-arglist->tk-argstring x))
-                   "}"))))
-          ((pair? x)
-           (string-append
-            " "
-            (form->string (car x))
-            "."
-            (form->string (cdr x))))
-          ((string? x)
-           (if (string->number x)
-               (string-append " " x)
-               (string-append
-                " \""
-                (string-translate x
-                                  '((#\\ . "\\\\") (#\" . "\\\"")
-                                    (#\[ . "\\u005b") (#\] . "\\]")
-                                    (#\$ . "\\u0024")
-                                    (#\{ . "\\{") (#\} . "\\}")))
-                "\"")))
-          (else (string-append " " (form->string x))))))
-
-(define scheme-arglist->tk-argstring
-  (lambda (args)
-    (apply string-append
-           (map scheme-arg->tk-arg
-                args))))
-
-(define make-wish-func
-  (lambda (tkname)
-    (let ((name (form->string tkname)))
-      (lambda args
-        (eval-wish
+(define (scheme-arg->tk-arg x)
+  (cond ((eq? x #f) " 0")
+        ((eq? x #t) " 1")
+        ((eq? x '()) " {}")
+        ((option? x) (make-option-string x))
+        ((widget? x) (string-append " " (x 'get-id)))
+        ((and (pair? x) (procedure? (car x)))
+         (let* ((lambda-term (car x))
+                (rest (cdr x))
+                (l (memq lambda-term
+                         inverse-commands-invoked-by-tk))
+                (keystr (if l (form->string (cadr l))
+                            (symbol->string (gen-symbol)))))
+           (if (not l)
+               (let ((key (string->symbol keystr)))
+                 (set! inverse-commands-invoked-by-tk
+                       (cons lambda-term
+                             (cons key
+                                   inverse-commands-invoked-by-tk)))
+                 (set! commands-invoked-by-tk
+                       (cons key
+                             (cons lambda-term
+                                   commands-invoked-by-tk)))))
+           (string-append " {callToScm "
+                          keystr
+                          (scheme-arglist->tk-argstring rest)
+                          "}")))
+        ((procedure? x)
+         (scheme-arglist->tk-argstring `((,x))))
+        ((list? x)
+         (cond ((eq? (car x) '+)
+                (let ((result (string-trim-left
+                               (scheme-arglist->tk-argstring
+                                (cdr x)))))
+                  (cond ((string=? result "") " +")
+                        ((string=? "{" (substring result 0 1))
+                         (string-append
+                          " {+ "
+                          (substring result 1
+                                     (string-length result))))
+                        (else (string-append " +" result)))))
+               ((and (= (length x) 3)
+                     (equal? (car x) (string->symbol "@"))
+                     (number? (cadr x))
+                     (number? (caddr x)))
+                (string-append
+                 "@"
+                 (number->string (cadr x))
+                 ","
+                 (number->string (caddr x))))
+               (else
+                (string-append
+                 " {"
+                 (string-trim-left
+                  (scheme-arglist->tk-argstring x))
+                 "}"))))
+        ((pair? x)
          (string-append
-          name
-          (scheme-arglist->tk-argstring args)))))))
+          " "
+          (form->string (car x))
+          "."
+          (form->string (cdr x))))
+        ((string? x)
+         (if (string->number x)
+             (string-append " " x)
+             (string-append
+              " \""
+              (string-translate x
+                                '((#\\ . "\\\\") (#\" . "\\\"")
+                                  (#\[ . "\\u005b") (#\] . "\\]")
+                                  (#\$ . "\\u0024")
+                                  (#\{ . "\\{") (#\} . "\\}")))
+              "\"")))
+        (else (string-append " " (form->string x)))))
 
-(define read-wish
-  (lambda ()
-    (let ((term (read wish-output)))
-      (cond (*wish-debug-output*
-             (display "wish->scheme: ")
-             (write term)
-             (newline)))
-      term)))
+(define (scheme-arglist->tk-argstring args)
+  (apply string-append
+         (map scheme-arg->tk-arg
+              args)))
 
-(define wish
-  (lambda arguments
-    (for-each
-     (lambda (argument)
-       (cond (*wish-debug-input*
-              (display "scheme->wish: ")
-              (display argument)
-              (newline)))
-       (display argument wish-input)
-       (newline wish-input)
-       (flush-wish))
-     arguments)))
+(define (make-wish-func tkname)
+  (let ((name (form->string tkname)))
+    (lambda args
+      (eval-wish
+       (string-append
+        name
+        (scheme-arglist->tk-argstring args))))))
 
-(define start-wish
-  (lambda ()
-    (let ((result (run-program *wish-program*)))
-      (set! wish-input (cadr result))
-      (set! wish-output (car result)))))
+(define (read-wish)
+  (let ((term (read wish-output)))
+    (cond (*wish-debug-output*
+           (display "wish->scheme: ")
+           (write term)
+           (newline)))
+    term))
 
-(define read-line
-  (lambda (in)
-    (letrec
-        ((collect-chars
-          (lambda (c s)
-            (cond ((or (eof-object? c) (char=? c #\newline))
-                   (apply string (reverse s)))
-                  (else (collect-chars (read-char in) (cons c s))))))
-         (first-char
-          (read-char in)))
-      (cond ((eof-object? first-char) first-char)
-            (else (collect-chars first-char '()))))))
+(define (wish arguments)
+  (for-each
+   (lambda (argument)
+     (cond (*wish-debug-input*
+            (display "scheme->wish: ")
+            (display argument)
+            (newline)))
+     (display argument wish-input)
+     (newline wish-input)
+     (flush-wish))
+   arguments))
 
-(define eval-wish
-  (lambda (cmd)
-    (wish (string-append
-           "evalCmdFromScm \""
-           (string-translate cmd
-                             '((#\\ . "\\\\") (#\" . "\\\"")))
-           "\""))
-    (let again ((result (read-wish)))
-      (cond ((not (pair? result))
-             (report-error (string-append
-                            "An error occurred inside Tcl/Tk" nl
-                            " --> " (form->string result)
-                            " " (read-line wish-output))))
-            ((eq? (car result) 'return)
-             (cadr result))
-            ((eq? (car result) 'call)
-             (apply call-by-key (cdr result))
-             (again (read-wish)))
-            ((eq? (car result) 'error)
-             (report-error (string-append
-                            "An error occurred inside Tcl/Tk" nl
-                            " " cmd nl
-                            " --> " (cadr result))))
-            (else (report-error result))))))
+(define (start-wish)
+  (let ((result (run-program *wish-program*)))
+    (set! wish-input (cadr result))
+    (set! wish-output (car result))))
 
-(define id->widget
-  (lambda (id)
-    (get-property
-     (string->symbol (form->string id))
-     tk-ids+widgets
-     (lambda ()
-       (if (tcl-true? (tk/winfo 'exists id))
-           (make-widget-by-id
-            (tk/winfo 'class id)
-            (form->string id))
-           #f)))))
+(define (read-line in)
+  (letrec
+      ((collect-chars
+        (lambda (c s)
+          (cond ((or (eof-object? c) (char=? c #\newline))
+                 (apply string (reverse s)))
+                (else (collect-chars (read-char in) (cons c s))))))
+       (first-char
+        (read-char in)))
+    (cond ((eof-object? first-char) first-char)
+          (else (collect-chars first-char '())))))
 
-(define var
-  (lambda (varname)
-    (set-var! varname "")
-    (string-append
-     "::scmVar("
-     (form->string varname)
-     ")")))
+(define (eval-wish cmd)
+  (wish (string-append
+         "evalCmdFromScm \""
+         (string-translate cmd
+                           '((#\\ . "\\\\") (#\" . "\\\"")))
+         "\""))
+  (let again ((result (read-wish)))
+    (cond ((not (pair? result))
+           (report-error (string-append
+                          "An error occurred inside Tcl/Tk" nl
+                          " --> " (form->string result)
+                          " " (read-line wish-output))))
+          ((eq? (car result) 'return)
+           (cadr result))
+          ((eq? (car result) 'call)
+           (apply call-by-key (cdr result))
+           (again (read-wish)))
+          ((eq? (car result) 'error)
+           (report-error (string-append
+                          "An error occurred inside Tcl/Tk" nl
+                          " " cmd nl
+                          " --> " (cadr result))))
+          (else (report-error result)))))
 
-(define get-var
-  (lambda (varname)
-    (eval-wish
-     (string-append
-      "set ::scmVar("
-      (form->string varname)
-      ")"))))
+(define (id->widget id)
+  (get-property
+   (string->symbol (form->string id))
+   tk-ids+widgets
+   (lambda ()
+     (if (tcl-true? (tk/winfo 'exists id))
+         (make-widget-by-id
+          (tk/winfo 'class id)
+          (form->string id))
+         #f))))
 
-(define set-var!
-  (lambda (varname value)
-    (eval-wish
-     (string-append
-      "set ::scmVar("
-      (form->string varname)
-      ") {"
-      (form->string value)
-      "}"))))
+(define (var varname)
+  (set-var! varname "")
+  (string-append
+   "::scmVar("
+   (form->string varname)
+   ")"))
 
-(define start
-  (lambda ()
-    (start-wish)
-    (wish tk-init-string)
-    (set! tk-ids+widgets '())
-    (set! tk-widgets '())
-    (set! in-callback #f)
-    (set! tk (make-widget-by-id 'toplevel "." 'class: 'Wish))
-    (set! commands-invoked-by-tk '())
-    (set! inverse-commands-invoked-by-tk '())
-    (tk/wm 'protocol tk 'WM_DELETE_WINDOW end-tk)))
+(define (get-var varname)
+  (eval-wish
+   (string-append
+    "set ::scmVar("
+    (form->string varname)
+    ")")))
 
-(define end-tk
-  (lambda ()
-    (set! tk-is-running #f)
-    (wish "after 200 exit")))
+(define (set-var! varname value)
+  (eval-wish
+   (string-append
+    "set ::scmVar("
+    (form->string varname)
+    ") {"
+    (form->string value)
+    "}")))
 
-(define ispatch-event
-  (lambda ()
-    (let ((tk-statement (read-wish)))
-      (if (and (list? tk-statement)
-               (eq? (car tk-statement) 'call))
-          (apply call-by-key (cdr tk-statement))))))
+(define (start)
+  (start-wish)
+  (wish tk-init-string)
+  (set! tk-ids+widgets '())
+  (set! tk-widgets '())
+  (set! in-callback #f)
+  (set! tk (make-widget-by-id 'toplevel "." 'class: 'Wish))
+  (set! commands-invoked-by-tk '())
+  (set! inverse-commands-invoked-by-tk '())
+  (tk/wm 'protocol tk 'WM_DELETE_WINDOW end-tk))
 
-(define loop
-  (lambda ()
-    (cond ((not tk-is-running)
-           (if wish-output
-               (tk/wm 'protocol tk 'WM_DELETE_WINDOW '())))
-          (else (dispatch-event)
-                (loop)))))
+(define (end-tk)
+  (set! tk-is-running #f)
+  (wish "after 200 exit"))
 
-(define event-loop
-  (lambda ()
-    (set! tk-is-running #t)
-    (loop)))
+(define (ispatch-event)
+  (let ((tk-statement (read-wish)))
+    (if (and (list? tk-statement)
+             (eq? (car tk-statement) 'call))
+        (apply call-by-key (cdr tk-statement)))))
 
-(define map-ttk-widgets
-  (lambda (x)
-    (cond ((eq? x 'all)
-           (set! ttk-widget-map '("button" "checkbutton" "radiobutton"
-                                  "menubutton" "label" "entry" "frame"
-                                  "labelframe" "scrollbar" "notebook"
-                                  "progressbar" "combobox" "separator"
-                                  "scale" "sizegrip" "treeview")))
-          ((eq? x 'none)
-           (set! ttk-widget-map '()))
-          ((pair? x) (set! ttk-widget-map
-                           (map form->string x)))
-          (else (report-error
-                 (string-append
-                  "Argument to TTK-MAP-WIDGETS must be "
-                  "ALL, NONE or a list of widget types."))))))
+(define (loop)
+  (cond ((not tk-is-running)
+         (if wish-output
+             (tk/wm 'protocol tk 'WM_DELETE_WINDOW '())))
+        (else (dispatch-event)
+              (loop))))
 
-(define string-split
-  (lambda (c s)
-    (letrec
-        ((split (lambda (i k tmp res)
-                  (cond ((= i k)
-                         (if (null? tmp) res (cons tmp res)))
-                        ((char=? (string-ref s i) c)
-                         (split (+ i 1) k "" (cons tmp res)))
-                        (else (split (+ i 1) k
-                                     (string-append tmp
-                                                    (string (string-ref s i)))
-                                     res))))))
-      (reverse (split 0 (string-length s) "" '())))))
+(define (event-loop)
+  (set! tk-is-running #t)
+  (loop))
 
-(define ttk-available-themes
-  (lambda ()
-    (string-split #\space (eval-wish "ttk::style theme names"))))
+(define (map-ttk-widgets x)
+  (cond ((eq? x 'all)
+         (set! ttk-widget-map '("button" "checkbutton" "radiobutton"
+                                "menubutton" "label" "entry" "frame"
+                                "labelframe" "scrollbar" "notebook"
+                                "progressbar" "combobox" "separator"
+                                "scale" "sizegrip" "treeview")))
+        ((eq? x 'none)
+         (set! ttk-widget-map '()))
+        ((pair? x) (set! ttk-widget-map
+                         (map form->string x)))
+        (else (report-error
+               (string-append
+                "Argument to TTK-MAP-WIDGETS must be "
+                "ALL, NONE or a list of widget types.")))))
 
-(define do-wait-for-window
-  (lambda (w)
-    (dispatch-event)
-    (cond ((equal? (tk/winfo 'exists w) "0") '())
-          (else (do-wait-for-window w)))))
+(define (string-split c s)
+  (letrec
+      ((split (lambda (i k tmp res)
+                (cond ((= i k)
+                       (if (null? tmp) res (cons tmp res)))
+                      ((char=? (string-ref s i) c)
+                       (split (+ i 1) k "" (cons tmp res)))
+                      (else (split (+ i 1) k
+                                   (string-append tmp
+                                                  (string (string-ref s i)))
+                                   res))))))
+    (reverse (split 0 (string-length s) "" '()))))
 
-(define wait-for-window
-  (lambda (w)
-    (let ((outer-allow callback-mutex))
-      (set! callback-mutex #t)
-      (do-wait-for-window w)
-      (set! callback-mutex outer-allow))))
+(define (ttk-available-themes)
+    (string-split #\space (eval-wish "ttk::style theme names")))
 
-(define wait-until-visible
-  (lambda (w)
-    (tk/wait 'visibility w)))
+(define (do-wait-for-window w)
+  (dispatch-event)
+  (cond ((equal? (tk/winfo 'exists w) "0") '())
+        (else (do-wait-for-window w))))
 
-(define lock!
-  (lambda ()
-    (set! callback-mutex
-          (cons callback-mutex #t))))
+(define (wait-for-window w)
+  (let ((outer-allow callback-mutex))
+    (set! callback-mutex #t)
+    (do-wait-for-window w)
+    (set! callback-mutex outer-allow)))
 
-(define unlock!
-  (lambda ()
-    (if (pair? callback-mutex)
-        (set! callback-mutex
-              (cdr callback-mutex)))))
+(define (wait-until-visible w)
+    (tk/wait 'visibility w))
 
-(define with-lock
-  (lambda (thunk)
-    (lock!)
-    (thunk)
-    (unlock!)))
+(define (lock!)
+  (set! callback-mutex
+        (cons callback-mutex #t)))
+
+(define (unlock!)
+  (if (pair? callback-mutex)
+      (set! callback-mutex
+            (cdr callback-mutex))))
+
+(define (with-lock thunk)
+  (lock!)
+  (thunk)
+  (unlock!))
 
 ;;; End weird letrec definitions.
 
