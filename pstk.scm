@@ -663,10 +663,13 @@
              (string-append
               " \""
               (string-translate x
-                                '((#\\ . "\\\\") (#\" . "\\\"")
-                                  (#\[ . "\\u005b") (#\] . "\\]")
+                                '((#\" . "\\\"")
                                   (#\$ . "\\u0024")
-                                  (#\{ . "\\{") (#\} . "\\}")))
+                                  (#\[ . "\\u005b")
+                                  (#\\ . "\\\\")
+                                  (#\] . "\\]")
+                                  (#\{ . "\\{")
+                                  (#\} . "\\}")))
               "\"")))
         (else (string-append " " (form->string x)))))
 
@@ -722,7 +725,8 @@
   (wish (string-append
          "evalCmdFromScm \""
          (string-translate cmd
-                           '((#\\ . "\\\\") (#\" . "\\\"")))
+                           '((#\" . "\\\"")
+                             (#\\ . "\\\\")))
          "\""))
   (let again ((result (read-wish)))
     (cond ((not (pair? result))
