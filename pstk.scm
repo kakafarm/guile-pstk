@@ -160,7 +160,9 @@
 	    ttk/available-themes
 	    ttk/set-theme
 	    ttk/style)
-  #:use-modules ((srfi srfi-88)))
+  #:use-modules ((srfi srfi-88)
+
+                 (ice-9 match)))
 
 (define *wish-program* "tclsh")
 (define *wish-debug-input* #f)
@@ -448,7 +450,8 @@
                                       (string-length str))))
         (else str)))
 
-(define (get-property key args . thunk)
+(define* (get-property key args #:optional (thunk #f))
+  ;; XXX: Originally the function signature was (get-property key args . thunk).
   (cond ((null? args)
          (cond ((null? thunk) #f)
                (else ((car thunk)))))
@@ -458,7 +461,29 @@
         ((or (not (pair? (cdr args)))
              (not (pair? (cddr args))))
          (report-error (list 'get-property key args)))
-        (else (apply get-property key (cddr args) thunk))))
+        (else (apply get-property key (cddr args) thunk)))
+
+  ;; XXX: Not sure if it's clearer than the above.
+  (match args
+    (()
+     (match
+      ((thunk-value)
+       (thunk-value))
+      (#f
+       #f)
+      (_
+       (report-error (list 'get-property key args thunk)))))
+    ((and (args-key . args-rest)
+          (? eq? key args-key))
+     (match args-rest
+       ((args-value . args-rest)
+        args-value)
+       (_
+        (report-error (list 'get-property key args)))))
+    ((args-key args-value-0 more-value-1 . args-rest)
+     (apply get-property key (cddr args) thunk))
+    (_
+     (report-error (list 'get-property key args)))))
 
 (define tcl-true?
   (let ((false-values
