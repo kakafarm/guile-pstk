@@ -813,6 +813,8 @@
 ;;   (reverse (split 0 (string-length s) "" '())))
 
 (define (ttk-available-themes)
+  ;; XXX: Using the Guile string-split instead of the above commented
+  ;; out one.
   (string-split (eval-wish "ttk::style theme names")
                 g#\space))
 
