@@ -238,14 +238,18 @@
 	  (set! enabled (car args))))))
 
 (define (->string x)
-  (cond ((string? x) x)
-	((symbol? x) (symbol->string x))
-	((char?   x) (string x))
-	((number? x) (number->string x))
-	(else
-	 (let ((out (open-output-string)))
-	   (display x out)
-	   (get-output-string out)))))
+  ;; XXX: Commenting out for the simpler implementation below.
+  ;; (cond ((string? x) x)
+  ;;       ((symbol? x) (symbol->string x))
+  ;;       ((char?   x) (string x))
+  ;;       ((number? x) (number->string x))
+  ;;       (else
+  ;;        (let ((out (open-output-string)))
+  ;;          (display x out)
+  ;;          (get-output-string out))))
+
+  (with-output-to-string
+    (lambda () (display x))))
 
 ;;; Start weird letrec definitions:
 
