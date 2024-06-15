@@ -406,28 +406,51 @@
         (string-append " -"
                        (substring s 0 (- (string-length s) 1))))))
 
-(define (improper-list->string a first)
-  (cond ((pair? a)
-         (cons (string-append (if first "" " ")
-                              (form->string (car a)))
-               (improper-list->string (cdr a) #f)))
-        ((null? a) '())
-        (else (list (string-append " . " (form->string a))))))
+(define (improper-list->string possibly-improper-list)
+  ;; XXX: Commenting out and replacing with the implementation at the bottom.
+  ;; (cond ((pair? a)
+  ;;        (cons (string-append (if first "" " ")
+  ;;                             (form->string (car a)))
+  ;;              (improper-list->string (cdr a) #f)))
+  ;;       ((null? a) '())
+  ;;       (else (list (string-append " . " (form->string a)))))
+
+  ;; We know we only ever get a pair as POSSIBLY-IMPROPER-LIST, so we:
+  (let loop ((result (form->string (car possibly-improper-list)))
+             ;; Take the first of argument POSSIBLY-IMPROPER-LIST
+             ;; without any space separator.
+             (a (cdr possibly-improper-list))
+             ;; and the rest of A.
+             )
+    (match a
+      ((first-of-a . rest-of-a)
+       ;; Now that we are sure we are in the middle of the list we can
+       ;; start adding space separators.
+       (loop (cons (string-append (form->string first-of-a)
+                                  " ")
+                   result)
+             rest-of-a))
+      (() (reverse result))
+      (improper-list-terminator
+       (reverse (cons (form->string improper-list-terminator)
+                      " . "
+                      result))))))
 
 (define (form->string x)
-  (cond ((eq? #t x) "#t")
-        ((eq? #f x) "#f")
-        ((number? x) (number->string x))
-        ((symbol? x) (symbol->string x))
-        ((string? x) x)
-        ((null? x) "()")
-        ((pair? x)
-         (string-append "("
-                        (apply string-append
-                               (improper-list->string x #t))
-                        ")"))
-        ((eof-object? x) "#<eof>")
-        (else "#<other>")))
+  (match x
+    (#t "#t")
+    (#f "#f")
+    ((? number? x) (number->string x))
+    ((? symbol? x) (symbol->string x))
+    ((? string? x) x)
+    (() "()")
+    ((_ . _)
+     (string-append "("
+                    (apply string-append
+                           (improper-list->string x))
+                    ")"))
+    ((eof-object? x) "#<eof>")
+    (_ "#<other>")))
 
 (define (string-translate s map)
   (define (s-prepend s1 s2)
