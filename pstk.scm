@@ -708,7 +708,7 @@ proc evalCmdFromScm {cmd {properly 0}} {
            (newline)))
     term))
 
-(define (wish arguments)
+(define (wish . arguments)
   (for-each
    (lambda (argument)
      (cond (*wish-debug-input*
