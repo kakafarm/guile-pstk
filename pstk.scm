@@ -160,9 +160,8 @@
 	    ttk/available-themes
 	    ttk/set-theme
 	    ttk/style)
-  #:use-modules ((srfi srfi-88)
-
-                 (ice-9 match)))
+  #:use-module (srfi srfi-88)
+  #:use-module (ice-9 match))
 
 (define *wish-program* "tclsh")
 (define *wish-debug-input* #f)
