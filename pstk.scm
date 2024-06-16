@@ -337,7 +337,8 @@ proc evalCmdFromScm {cmd {properly 0}} {
         puts \"(return \\\"[string map [list \\\\ \\\\\\\\ \\\" \\\\\\\"] $result]\\\")\"
     }
     flush stdout
-}")
+}
+")
 
 (define (report-error x)
   (newline)
