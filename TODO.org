@@ -1,0 +1,13 @@
+* TODO Template for assets like the Tcl Tk initialisation source file and whatnot.
+
+From <ircs://irc.libera.chat/guile>:
+
+#+begin_quote
+2024-06-16T23:33:11+0000 < cow_2001> i have a piece of Tcl code lying about in pstk.scm as a string and i want to take it out and put it in a dedicated Tcl file.  how do i find the location of this kind of non-scm file assets within to my package, then?
+[…]
+2024-06-16T23:43:14+0000 < flatwhatson> cow_2001: you could hunt for things at runtime along %load-path and friends, or use the traditional approach of determining the path at configure time and embedding it into your package
+2024-06-16T23:45:41+0000 < flatwhatson> ie. using a config.scm.in template with a @PATH_TO_MY_THING@, eg. https://git.dthompson.us/chickadee/tree/chickadee/config.scm.in
+2024-06-16T23:45:55+0000 < cow_2001> oh boy.  autotools template!
+2024-06-16T23:46:08+0000 < cow_2001> that'll be a new one for me
+2024-06-16T23:48:14+0000 < cow_2001> flatwhatson: thank you!
+#+end_quote
