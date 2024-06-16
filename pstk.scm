@@ -463,11 +463,7 @@ proc evalCmdFromScm {cmd {properly 0}} {
    (s-xlate (string->list s) '())))
 
 (define (string-trim-left str)
-  (cond ((string=? str "") "")
-        ((string=? (substring str 0 1) " ")
-         (string-trim-left (substring str 1
-                                      (string-length str))))
-        (else str)))
+  (string-trim str #\space))
 
 (define* (get-property key args #:optional (thunk #f))
   ;; XXX: Originally the function signature was (get-property key args . thunk).
