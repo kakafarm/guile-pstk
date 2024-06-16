@@ -822,9 +822,9 @@ proc evalCmdFromScm {cmd {properly 0}} {
         (apply call-by-key (cdr tk-statement)))))
 
 (define (loop)
-  (cond ((not tk-is-running)
-         (if wish-output
-             (tk/wm 'protocol tk 'WM_DELETE_WINDOW '())))
+  (cond ((and (not tk-is-running)
+              wish-output)
+         (tk/wm 'protocol tk 'WM_DELETE_WINDOW '()))
         (else (dispatch-event)
               (loop))))
 
