@@ -811,7 +811,7 @@ proc evalCmdFromScm {cmd {properly 0}} {
   (set! tk-is-running #f)
   (wish "after 200 exit"))
 
-(define (ispatch-event)
+(define (dispatch-event)
   (let ((tk-statement (read-wish)))
     (if (and (list? tk-statement)
              (eq? (car tk-statement) 'call))
