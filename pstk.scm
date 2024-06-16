@@ -348,7 +348,7 @@ proc evalCmdFromScm {cmd {properly 0}} {
     (error 'tk (->string x))))
 
 (define (run-program program)
-  (define (open-i/o-process prog .args)
+  (define (open-i/o-process prog . args)
     (let ((c2p (pipe))
           (p2c (pipe)))
       (setvbuf (cdr c2p) 'none)
@@ -362,28 +362,24 @@ proc evalCmdFromScm {cmd {properly 0}} {
                   (lambda (pt-entry)
                     (false-if-exception
                      (let ((pt-fileno (fileno pt-entry)))
-                       (if (not (or (= pt-fileno input-fdes)
-                                    (= pt-fileno output-fdes)))
-                           (close-fdes pt-fileno))))))
+                       (when (not (or (= pt-fileno input-fdes)
+                                      (= pt-fileno output-fdes)))
+                         (close-fdes pt-fileno))))))
                  (cond ((not (= input-fdes 0))
-                        (if (= output-fdes 0)
-                            (set! output-fdes (dup->fdes 0)))
+                        (when (= output-fdes 0)
+                          (set! output-fdes (dup->fdes 0)))
                         (dup2 input-fdes 0)))
-                 (if (not (= output-fdes 1))
-                     (dup2 output-fdes 1))
+                 (when (not (= output-fdes 1))
+                   (dup2 output-fdes 1))
                  (apply execlp prog prog args)))
               (else
                (close-port (cdr c2p))
                (close-port (car p2c))
-               (cons (car c2p)
-                     (cdr p2c)))))))
+               (values (car c2p)
+                       (cdr p2c)))))))
 
-  (let* ((in/out
-          (open-i/o-process "/bin/sh" "-c"
-                            (string-append "exec " program)))
-         (in (car in/out))
-         (out (cdr in/out)))
-    (list in out)))
+  (open-i/o-process "/bin/sh" "-c"
+                    (string-append "exec " program)))
 
 (define flush-output-port force-output)
 
@@ -730,9 +726,10 @@ proc evalCmdFromScm {cmd {properly 0}} {
    arguments))
 
 (define (start-wish)
-  (let ((result (run-program *wish-program*)))
-    (set! wish-input (cadr result))
-    (set! wish-output (car result))))
+  (let-values (((wish-output-pipe wish-input-pipe)
+                (run-program *wish-program*)))
+    (set! wish-input wish-input-pipe)
+    (set! wish-output wish-output-pipe)))
 
 (define (read-line in)
   (define (collect-chars c s)
