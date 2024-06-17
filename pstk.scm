@@ -654,14 +654,15 @@
     (set! wish-input wish-input-pipe)
     (set! wish-output wish-output-pipe)))
 
-(define (read-line in)
-  (define (collect-chars c s)
-    (cond ((or (eof-object? c) (char=? c #\newline))
-           (apply string (reverse s)))
-          (else (collect-chars (read-char in) (cons c s)))))
-  (define first-char (read-char in))
-  (cond ((eof-object? first-char) first-char)
-        (else (collect-chars first-char '()))))
+;; XXX: Commenting because Guile already have a read-line.
+;; (define (read-line in)
+;;   (define (collect-chars c s)
+;;     (cond ((or (eof-object? c) (char=? c #\newline))
+;;            (apply string (reverse s)))
+;;           (else (collect-chars (read-char in) (cons c s)))))
+;;   (define first-char (read-char in))
+;;   (cond ((eof-object? first-char) first-char)
+;;         (else (collect-chars first-char '()))))
 
 (define (eval-wish cmd)
   (wish (string-append
