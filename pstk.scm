@@ -639,10 +639,10 @@
 (define (wish . arguments)
   (for-each
    (lambda (argument)
-     (cond (*wish-debug-input*
-            (display "scheme->wish: ")
-            (display argument)
-            (newline)))
+     (when *wish-debug-input*
+       (display "scheme->wish: ")
+       (display argument)
+       (newline))
      (display argument wish-input)
      (newline wish-input)
      (flush-wish))
