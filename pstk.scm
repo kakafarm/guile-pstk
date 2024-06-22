@@ -102,6 +102,7 @@
 ;;; 2006-12-02 Added PLT/Windows port.
 
 (define-module (pstk)
+  #:pure
   #:export (*wish-program*
 	    *wish-debug-input*
 	    *wish-debug-output*
@@ -160,8 +161,85 @@
 	    ttk/available-themes
 	    ttk/set-theme
 	    ttk/style)
-  #:use-module (srfi srfi-88)
-  #:use-module (ice-9 match))
+  #:use-module ((guile)
+                #:select (
+                          else
+                          +
+                          =
+                          EXIT_FAILURE
+                          and
+                          append
+                          apply
+                          assv
+                          caddr
+                          cadr
+                          car
+                          cddr
+                          cdr
+                          close-fdes
+                          close-port
+                          cond
+                          case
+                          cons
+                          define
+                          define*
+                          display
+                          do
+                          ensure-batch-mode!
+                          eof-object?
+                          eq?
+                          equal?
+                          error
+                          exit
+                          false-if-exception
+                          for-each
+                          force-output
+                          if
+                          lambda
+                          length
+                          let
+                          let*
+                          list
+                          list->string
+                          list?
+                          map
+                          newline
+                          not
+                          null?
+                          number?
+                          or
+                          pipe
+                          primitive-fork
+                          quasiquote
+                          quote
+                          reverse
+                          set!
+                          string
+                          string->number
+                          string-append
+                          string-split
+                          string-trim
+                          string=?
+                          string?
+                          substring
+                          symbol->string
+                          symbol?
+                          values
+                          when
+                          ))
+  #:use-module ((srfi srfi-11)
+                #:select
+                (let-values))
+  #:use-module ((srfi srfi-88) #:select ())
+  #:use-module ((ice-9 match) #:select (match))
+  #:use-module ((ice-9 ports) #:select (call-with-input-file current-output-port current-input-port with-input-from-file read-char dup2 fileno port-for-each setvbuf))
+  #:use-module ((ice-9 rdelim) #:select (read-line))
+  #:use-module ((ice-9 textual-ports) #:select (get-string-all))
+  #:use-module (raw-strings)
+  )
+
+(display (cond (#f #f)
+               (else 1)))
 
 (define *wish-program* "tclsh")
 (define *wish-debug-input* #f)
@@ -256,13 +334,13 @@
 (define wish-input #f) ;; Pipe into the wish process's input.  A pipe to which you write.
 (define wish-output #f) ;; Pipe out from the wish process's output.  A pipe from which you read.
 (define tk-is-running #f) ;; Used to exit the event loop.
-(define tk-ids+widgets '())
-(define tk-widgets '())
-(define commands-invoked-by-tk '())
-(define inverse-commands-invoked-by-tk '())
-(define in-callback #f)
-(define callback-mutex #t)
-(define ttk-widget-map '())
+(define tk-ids+widgets '()) ;; TODO: Write comment.
+(define tk-widgets '()) ;; TODO: Write comment.
+(define commands-invoked-by-tk '()) ;; TODO: Write comment.
+(define inverse-commands-invoked-by-tk '()) ;; TODO: Write comment.
+(define in-callback #f) ;; TODO: Write comment.
+(define callback-mutex #t) ;; TODO: Write comment.
+(define ttk-widget-map '()) ;; TODO: Write comment.
 (define tk-init-string (call-with-input-file "tk-init.tcl"
                          (lambda (port)
                            (get-string-all port))))
@@ -278,6 +356,7 @@
   (define (open-i/o-process prog . args)
     (let ((c2p (pipe))
           (p2c (pipe)))
+      ;; TODO: Where in Guile's modules is setvbuf defined?
       (setvbuf (cdr c2p) 'none)
       (setvbuf (cdr p2c) 'none)
       (let ((pid (primitive-fork)))
@@ -353,11 +432,14 @@
                                   " ")
                    result)
              rest-of-a))
-      (() (reverse result))
+      ;; TODO: What's going on here, love?
+      (() (string-concatenate-reverse result))
       (improper-list-terminator
-       (reverse (cons (form->string improper-list-terminator)
-                      " . "
-                      result))))))
+       ;; TODO: What's going on here, love?
+       (string-concatenate-reverse
+        (cons (form->string improper-list-terminator)
+              " . "
+              result))))))
 
 (define (form->string x)
   (match x
@@ -409,12 +491,12 @@
   (match args
     (()
      (match
-      ((thunk-value)
-       (thunk-value))
-      (#f
-       #f)
-      (_
-       (report-error (list 'get-property key args thunk)))))
+         ((thunk-value)
+          (thunk-value))
+       (#f
+        #f)
+       (_
+        (report-error (list 'get-property key args thunk)))))
     ((and (args-key . args-rest)
           (? eq? key args-key))
      (match args-rest
@@ -440,16 +522,19 @@
   (and (memq x tk-widgets) #t))
 
 (define (call-by-key key resultvar . args)
-  (cond ((and in-callback (pair? callback-mutex)) #f)
-        (else (set! in-callback (cons #t in-callback))
-              (let* ((cmd (get-property key commands-invoked-by-tk))
-                     (result (apply cmd args))
-                     (str (string-trim-left
-                           (scheme-arglist->tk-argstring
-                            (list result)))))
-                (set-var! resultvar str)
-                (set! in-callback (cdr in-callback))
-                result))))
+  (cond ((and in-callback
+              (pair? callback-mutex))
+         #f)
+        (else
+         (set! in-callback (cons #t in-callback))
+         (let* ((cmd (get-property key commands-invoked-by-tk))
+                (result (apply cmd args))
+                (str (string-trim-left
+                      (scheme-arglist->tk-argstring
+                       (list result)))))
+           (set-var! resultvar str)
+           (set! in-callback (cdr in-callback))
+           result))))
 
 (define gen-symbol
   (let ((counter 0))
@@ -807,7 +892,7 @@
     (set! callback-mutex outer-allow)))
 
 (define (wait-until-visible w)
-    (tk/wait 'visibility w))
+  (tk/wait 'visibility w))
 
 (define (lock!)
   (set! callback-mutex
