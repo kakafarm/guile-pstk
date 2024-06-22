@@ -616,9 +616,9 @@
         (else (string-append " " (form->string x)))))
 
 (define (scheme-arglist->tk-argstring args)
-  (apply string-append
-         (map scheme-arg->tk-arg
-              args)))
+  (string-concatenate
+   (map scheme-arg->tk-arg
+        args)))
 
 (define (make-wish-func tkname)
   (let ((name (form->string tkname)))
