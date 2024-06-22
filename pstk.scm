@@ -637,7 +637,7 @@
     term))
 
 (define (wish . arguments)
-  "Send ARGUMENTS to wish.  Each argument in its own line."
+  "Send ARGUMENTS to wish."
   (for-each
    (lambda (argument)
      (when *wish-debug-input*
