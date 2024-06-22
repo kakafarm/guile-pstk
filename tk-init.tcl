@@ -4,10 +4,21 @@ if {[package version tile] != ""} {
 }
 
 namespace eval AutoName {
+    # This closure is used to return names that are never the same.
+    # Names are either the argument provided to autoName and the
+    # counter, or the default ## and the counter.
+    #
+    # Examples:
+    # % # When the argument is "moo":
+    # % ::AutoName::autoName moo #
+    # moo1
+    # % # When there are no provided arguments, the default "##" one is used:
+    # % ::AutoName::autoName
+    # ##2
     variable c 0
-    proc autoName {{result \#\#}} {
+    proc autoName {{providedName \#\#}} {
         variable c
-        append result [incr c]
+        append providedName [incr c]
     }
     namespace export *
 }
