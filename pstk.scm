@@ -256,13 +256,13 @@
 (define wish-input #f) ;; Pipe into the wish process's input.  A pipe to which you write.
 (define wish-output #f) ;; Pipe out from the wish process's output.  A pipe from which you read.
 (define tk-is-running #f) ;; Used to exit the event loop.
-(define tk-ids+widgets '())
-(define tk-widgets '())
-(define commands-invoked-by-tk '())
-(define inverse-commands-invoked-by-tk '())
-(define in-callback #f)
-(define callback-mutex #t)
-(define ttk-widget-map '())
+(define tk-ids+widgets '()) ;; TODO: Write comment.
+(define tk-widgets '()) ;; TODO: Write comment.
+(define commands-invoked-by-tk '()) ;; TODO: Write comment.
+(define inverse-commands-invoked-by-tk '()) ;; TODO: Write comment.
+(define in-callback #f) ;; TODO: Write comment.
+(define callback-mutex #t) ;; TODO: Write comment.
+(define ttk-widget-map '()) ;; TODO: Write comment.
 (define tk-init-string (call-with-input-file "tk-init.tcl"
                          (lambda (port)
                            (get-string-all port))))
