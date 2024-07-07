@@ -16,3 +16,9 @@ From <ircs://irc.libera.chat/guile>:
 
 - Some ideas?  (I haven't read yet.  Don't even know if it's something we should or shouldn't do.):
   https://medium.com/@roy-chng/make-python-tkinter-applications-look-modern-eb9d25a8e7bb
+
+* TODO Reading resources:
+
+https://www.tcl.tk/doc/
+https://www.peter-herth.de/ltk/ltkdoc/
+https://tkdocs.com/tutorial/intro.html

@@ -253,9 +253,9 @@
 ;;; Start weird letrec definitions:
 
 (define nl (string #\newline))
-(define wish-input #f)
-(define wish-output #f)
-(define tk-is-running #f)
+(define wish-input #f) ;; Pipe into the wish process's input.  A pipe to which you write.
+(define wish-output #f) ;; Pipe out from the wish process's output.  A pipe from which you read.
+(define tk-is-running #f) ;; Used to exit the event loop.
 (define tk-ids+widgets '())
 (define tk-widgets '())
 (define commands-invoked-by-tk '())
@@ -433,6 +433,10 @@
     (lambda (obj) (not (memv obj false-values)))))
 
 (define (widget? x)
+  ;; The AND here makes sure we return either #f or #t, nothing else.
+  ;; Either the application of MEMQ evalutates to #f thereby
+  ;; shortcircuiting the AND, or it evaluates to anything other than
+  ;; #f, and the AND evaluates #t, which is then returned.
   (and (memq x tk-widgets) #t))
 
 (define (call-by-key key resultvar . args)
