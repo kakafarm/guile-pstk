@@ -262,7 +262,7 @@
 (define wish-input #f) ;; Pipe into the wish process's input.  A pipe to which you write.
 (define wish-output #f) ;; Pipe out from the wish process's output.  A pipe from which you read.
 (define tk-is-running #f) ;; Used to exit the event loop.
-(define tk-ids+widgets '()) ;; TODO: Write comment.
+(define tk-ids+widgets '()) ;; A property list, rather than an association list, of the form (widget-id-1 widget-1 widget-id-2 widget-2 ... widget-id-n widget-n)
 (define tk-widgets '()) ;; TODO: Write comment.
 (define commands-invoked-by-tk '()) ;; TODO: Write comment.
 (define inverse-commands-invoked-by-tk '()) ;; TODO: Write comment.
@@ -543,8 +543,9 @@
                (scheme-arglist->tk-argstring args))))))))
     (set! tk-widgets (cons result tk-widgets))
     (set! tk-ids+widgets
-          (cons (string->symbol id)
-                (cons result tk-ids+widgets)))
+          (cons* (string->symbol id)
+                 result
+                 tk-ids+widgets))
     result))
 
 (define (scheme-arg->tk-arg x)
