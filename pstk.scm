@@ -164,7 +164,13 @@
   #:use-module (ice-9 match))
 
 (define *wish-program* "tclsh")
+
+;; Set to #t if you want to print all things written to the wish
+;; process.
 (define *wish-debug-input* #f)
+
+;; Set to #t if you want to print all things read from the wish
+;; process.
 (define *wish-debug-output* #f)
 
 (define *use-keywords?*
@@ -409,12 +415,12 @@
   (match args
     (()
      (match
-      ((thunk-value)
-       (thunk-value))
-      (#f
-       #f)
-      (_
-       (report-error (list 'get-property key args thunk)))))
+         ((thunk-value)
+          (thunk-value))
+       (#f
+        #f)
+       (_
+        (report-error (list 'get-property key args thunk)))))
     ((and (args-key . args-rest)
           (? eq? key args-key))
      (match args-rest
@@ -744,10 +750,17 @@
   (wish "after 200 exit"))
 
 (define (dispatch-event)
-  (let ((tk-statement (read-wish)))
-    (if (and (list? tk-statement)
-             (eq? (car tk-statement) 'call))
-        (apply call-by-key (cdr tk-statement)))))
+  ;; Previous was:
+  ;;
+  ;; (let ((tk-statement (read-wish)))
+  ;;   (if (and (list? tk-statement)
+  ;;            (eq? (car tk-statement) 'call))
+  ;;       (apply call-by-key (cdr tk-statement))))
+
+  (match (read-wish)
+    (`(call . ,call-contents)
+     (apply call-by-key
+            call-contents))))
 
 (define (loop)
   (cond ((and (not tk-is-running)
@@ -807,7 +820,7 @@
     (set! callback-mutex outer-allow)))
 
 (define (wait-until-visible w)
-    (tk/wait 'visibility w))
+  (tk/wait 'visibility w))
 
 (define (lock!)
   (set! callback-mutex
