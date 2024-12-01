@@ -160,8 +160,13 @@
 	    ttk/available-themes
 	    ttk/set-theme
 	    ttk/style)
+
+  #:use-module (srfi srfi-11)
   #:use-module (srfi srfi-88)
-  #:use-module (ice-9 match))
+
+  #:use-module (ice-9 textual-ports)
+  #:use-module (ice-9 match)
+  )
 
 (define *wish-program* "tclsh")
 
@@ -669,9 +674,8 @@
   (let again ((result (read-wish)))
     (cond ((not (pair? result))
            (report-error (string-append
-                          "An error occurred inside Tcl/Tk" nl
-                          " --> " (form->string result)
-                          " " (read-line wish-output))))
+                          "An error occurred inside Tcl/Tk
+ --> " (form->string result) " " (read-line wish-output))))
           ((eq? (car result) 'return)
            (cadr result))
           ((eq? (car result) 'call)
@@ -679,9 +683,9 @@
            (again (read-wish)))
           ((eq? (car result) 'error)
            (report-error (string-append
-                          "An error occurred inside Tcl/Tk" nl
-                          " " cmd nl
-                          " --> " (cadr result))))
+                          "An error occurred inside Tcl/Tk
+ " cmd "
+ --> " (cadr result))))
           (else (report-error result)))))
 
 (define (id->widget id)
