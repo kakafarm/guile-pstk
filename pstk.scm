@@ -335,35 +335,18 @@
         (string-append " -"
                        (substring s 0 (- (string-length s) 1))))))
 
-(define (improper-list->string possibly-improper-list)
-  ;; XXX: Commenting out and replacing with the implementation at the bottom.
-  ;; (cond ((pair? a)
-  ;;        (cons (string-append (if first "" " ")
-  ;;                             (form->string (car a)))
-  ;;              (improper-list->string (cdr a) #f)))
-  ;;       ((null? a) '())
-  ;;       (else (list (string-append " . " (form->string a)))))
-
-  ;; We know we only ever get a pair as POSSIBLY-IMPROPER-LIST, so we:
-  (let loop ((result (form->string (car possibly-improper-list)))
-             ;; Take the first of argument POSSIBLY-IMPROPER-LIST
-             ;; without any space separator.
-             (a (cdr possibly-improper-list))
-             ;; and the rest of A.
-             )
-    (match a
-      ((first-of-a . rest-of-a)
-       ;; Now that we are sure we are in the middle of the list we can
-       ;; start adding space separators.
-       (loop (cons (string-append (form->string first-of-a)
-                                  " ")
-                   result)
-             rest-of-a))
-      (() (reverse result))
-      (improper-list-terminator
-       (reverse (cons (form->string improper-list-terminator)
-                      " . "
-                      result))))))
+(define (possibly-improper-list->string possibly-improper-list)
+  (cond
+   ((pair? possibly-improper-list)
+    (cons (form->string (car possibly-improper-list))
+          (let rest-of-possibly-improper-list->string ((rest-of-list (cdr possibly-improper-list)))
+            (cond
+             ((pair? rest-of-list)
+              (cons (string-append " " (car rest-of-list))
+                    (rest-of-possibly-improper-list->string (cdr rest-of-list))))
+             ((null? rest-of-list) '())
+             (else (list (string-append " . " (form->string rest-of-list))))))))
+   (else '())))
 
 (define (form->string x)
   (match x
@@ -376,7 +359,7 @@
     ((_ . _)
      (string-append "("
                     (apply string-append
-                           (improper-list->string x))
+                           (possibly-improper-list->string x))
                     ")"))
     ((eof-object? x) "#<eof>")
     (_ "#<other>")))
