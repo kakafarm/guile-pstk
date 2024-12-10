@@ -76,6 +76,7 @@
                 (let* ((tcl-lib-directory (string-append #$output "/lib/pstk"))
                        (tk-init-file-target (string-append tcl-lib-directory "/tk-init.tcl")))
                   (import (guix build utils))
+                  (delete-file "guix.scm")
                   (mkdir-p tcl-lib-directory)
                   (copy-file "tk-init.tcl" tk-init-file-target)
                   (substitute* "pstk.scm"
